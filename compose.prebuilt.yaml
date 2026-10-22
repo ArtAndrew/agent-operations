@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: agent_operations
+      POSTGRES_DB: agent_operations
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/setup-env.mjs first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_operations"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  api:
+    image: agent-operations:0.1.0
+    command: ["node", "dist/cli.js", "api"]
+    init: true
+    environment: &environment
+      NODE_ENV: production
+      DATABASE_URL: postgresql://agent_operations:${POSTGRES_PASSWORD}@postgres:5432/agent_operations
+      MASTER_KEY: ${MASTER_KEY:?Set MASTER_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://127.0.0.1:4300}
+    ports:
+      - "127.0.0.1:4300:4300"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - artifacts:/app/.data
+  worker:
+    image: agent-operations:0.1.0
+    command: ["node", "dist/cli.js", "worker"]
+    init: true
+    shm_size: 1gb
+    environment: *environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - artifacts:/app/.data
+    healthcheck:
+      disable: true
+volumes:
+  database:
+  artifacts:

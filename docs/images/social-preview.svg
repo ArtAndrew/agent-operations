@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101a35"/><stop offset="1" stop-color="#18264a"/></linearGradient></defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect x="64" y="60" width="56" height="56" rx="15" fill="#7184ff"/>
+  <path d="M83 76v24m0-10h17V76" fill="none" stroke="white" stroke-width="3"/>
+  <circle cx="83" cy="101" r="4" fill="#101a35" stroke="white" stroke-width="2"/>
+  <circle cx="100" cy="76" r="4" fill="#101a35" stroke="white" stroke-width="2"/>
+  <text x="140" y="96" fill="#fff" font-family="Arial,sans-serif" font-size="34" font-weight="700">Agent Operations</text>
+  <text x="64" y="210" fill="#fff" font-family="Arial,sans-serif" font-size="58" font-weight="700">The response disappeared.</text>
+  <text x="64" y="280" fill="#fff" font-family="Arial,sans-serif" font-size="58" font-weight="700">Check the outcome.</text>
+  <text x="66" y="338" fill="#bdc8e4" font-family="Arial,sans-serif" font-size="27">Approvals and recovery for API and browser actions.</text>
+  <g font-family="Arial,sans-serif" font-size="24">
+    <rect x="64" y="397" width="280" height="96" rx="16" fill="#25365d" stroke="#425782"/>
+    <text x="92" y="435" fill="#aebee5" font-size="17">01 / DISPATCH</text><text x="92" y="469" fill="#fff">Record the action</text>
+    <path d="M363 446h43m-10-10 10 10-10 10" fill="none" stroke="#8fa4d6" stroke-width="3"/>
+    <rect x="426" y="397" width="280" height="96" rx="16" fill="#25365d" stroke="#425782"/>
+    <text x="454" y="435" fill="#aebee5" font-size="17">02 / VERIFY</text><text x="454" y="469" fill="#fff">Read external state</text>
+    <path d="M725 446h43m-10-10 10 10-10 10" fill="none" stroke="#8fa4d6" stroke-width="3"/>
+    <rect x="788" y="397" width="428" height="96" rx="16" fill="#203e46" stroke="#4a847d"/>
+    <text x="816" y="435" fill="#9ee4ce" font-size="17">03 / DECIDE</text><text x="816" y="469" fill="#fff">Confirm or ask for evidence</text>
+  </g>
+  <text x="64" y="577" fill="#c3cee8" font-family="Arial,sans-serif" font-size="21">github.com/ArtAndrew/agent-operations</text>
+  <text x="1216" y="577" fill="#91a2c7" font-family="Arial,sans-serif" font-size="19" text-anchor="end">ELv2 core · Apache-2.0 SDKs</text>
+</svg>

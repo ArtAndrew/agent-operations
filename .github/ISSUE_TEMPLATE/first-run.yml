@@ -1,0 +1,46 @@
+name: First-run report
+description: Tell us what happened when you tried one workflow.
+title: "[First run] "
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for trying Agent Operations. Share one reproducible experience. Remove credentials, customer data and private URLs before posting."
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, Node/Python/Docker version and release or commit.
+    validations:
+      required: true
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: Scenario
+      options:
+        - Lost-response recovery
+        - Browser approval
+        - Uncertain-outcome reconciliation
+        - LangGraph integration
+        - browser-use integration
+        - My own workflow
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened?
+      description: Steps, expected result, actual result, and redacted errors. A successful run is useful feedback too.
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: What real action would you use this for?
+      description: Describe the workflow and what would prevent you from adopting the project.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Before posting
+      options:
+        - label: I removed secrets and private customer information.
+          required: true

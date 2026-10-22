@@ -1,18 +1,30 @@
 # Agent Operations
 
-**Run agent-driven business operations with durable state, exact-action approvals and verified external outcomes.**
+**An agent sent the order. The response disappeared. What happens next?**
+
+Agent Operations records API and browser actions, checks what actually happened after a failure, and pauses for human review when it cannot establish the result.
+
+[![CI](https://github.com/ArtAndrew/agent-operations/actions/workflows/ci.yml/badge.svg)](https://github.com/ArtAndrew/agent-operations/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ArtAndrew/agent-operations)](https://github.com/ArtAndrew/agent-operations/releases)
+[![License: ELv2](https://img.shields.io/badge/core-ELv2-blue)](LICENSE)
+
+[Quickstart](#try-it-locally) · [Integration examples](examples/integrations/README.md) · [How recovery works](docs/articles/lost-response.md) · [First-run feedback](https://github.com/ArtAndrew/agent-operations/issues/new?template=first-run.yml)
 
 An operation can call an API, use a browser, request structured model output, or transform data. Agent Operations records each step, separates a dispatched action from a confirmed result, and makes uncertain writes visible for reconciliation.
 
 The server and dashboard are source-available under [Elastic License 2.0](LICENSE). The independently usable [TypeScript](sdk/typescript) and [Python](sdk/python) clients are Apache-2.0.
 
-![A recovered operation with one dispatch and a verified external receipt](docs/images/recovered-run.jpg)
+![Recorded local demo: prepare an order, lose the response, inspect the verified result](docs/images/recovery-demo.gif)
+
+These selected frames from a real local run are held for readability. The supplier fixture persists an order, intentionally drops the response, and exposes a separate lookup endpoint. It makes no real purchase and uses no paid model. [Reproduce it yourself](docs/quickstart.md).
 
 ## Try it locally
 
 Requires Node.js 22.12 or later and pnpm 11.25.0.
 
 ```sh
+git clone https://github.com/ArtAndrew/agent-operations.git
+cd agent-operations
 corepack enable
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium --only-shell
@@ -38,6 +50,20 @@ Example input:
 ```
 
 For `create-order`, change `mode` to `lose-response` to commit the order but lose the response. The worker checks the external result and completes without sending the write again. Use `unverifiable` to simulate an unavailable verification endpoint. Restore it in the supplier portal, then choose **Check again** on the run.
+
+For the exact released source, run `git checkout v0.1.0` after cloning. [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.1.0) also provides Linux Docker images and installable Python/TypeScript SDK archives. See [prebuilt installation](docs/prebuilt.md).
+
+## Use it with your existing agent
+
+| Example                                                   | What it proves                                                                          | Model key required? |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------- |
+| [Python recovery](examples/integrations/recover_order.py) | Lost-response recovery and repeated submission returning the same run                   | No                  |
+| [LangGraph](examples/integrations/langgraph_order.py)     | A real graph node submits an operation and routes approval or uncertainty to the caller | No                  |
+| [browser-use](examples/integrations/browser_use_order.py) | A registered custom tool requests an approved browser operation                         | No                  |
+
+These examples are tested against pinned libraries. The browser-use example exercises its tool registry and the server's real Chromium operation; it does not claim to test an autonomous model-driven browsing session. [Setup and boundaries](examples/integrations/README.md).
+
+Use Agent Operations when you need an explicit contract around an external action: its business identity, exact approval, verification and recovery. Your existing agent can retain planning and model selection. Operations are currently sequential; see the boundaries below before adopting it.
 
 ## What is included
 
@@ -92,6 +118,11 @@ Before creating external connections, configure their exact origins in `ALLOWED_
 
 ## Documentation
 
+- [Ten-minute first-run walkthrough](docs/quickstart.md)
+- [Prebuilt Docker images and SDK archives](docs/prebuilt.md)
+- [Why retrying an agent action can duplicate an order](docs/articles/lost-response.md)
+- [Bind approval to the action that will execute](docs/articles/exact-approval.md)
+- [Verify browser actions after a failure](docs/articles/browser-verification.md)
 - [Operation definitions and examples](docs/operations.md)
 - [Execution, retries and recovery](docs/execution.md)
 - [Deployment and configuration](docs/deployment.md)
@@ -119,3 +150,9 @@ The test suite exercises lost responses after commit, expired leases, duplicate 
 Operations are ordered step sequences. Arbitrary Python or shell code is not executed inside the server. Browser recipes use explicit selectors and actions; the built-in model step produces schema-validated JSON and does not autonomously invoke tools. External agent frameworks can choose and submit operations through the SDK.
 
 The current release does not include SSO, a payment processor, a visual workflow builder, multi-region coordination or a hosted service. Production deployments need their own TLS, backups, network isolation, monitoring and capacity validation.
+
+## Try one workflow and tell us what happened
+
+We are looking for early users who operate agents that change external systems. Run one demo, then [share a first-run report](https://github.com/ArtAndrew/agent-operations/issues/new?template=first-run.yml): what you tried, where you got stuck, and which real action you want to protect. Redact credentials and customer data. [Questions and use cases](https://github.com/ArtAndrew/agent-operations/discussions) are welcome.
+
+There is no adoption or production-performance claim in this release. Feedback from an independent installation is more useful than a synthetic benchmark alone.

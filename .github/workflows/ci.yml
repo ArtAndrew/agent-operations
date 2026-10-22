@@ -1,7 +1,9 @@
 name: CI
 on:
   push:
+    branches: ["main"]
   pull_request:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -46,6 +48,10 @@ jobs:
       - run: pnpm test:e2e
       - name: Build the Python distribution
         run: python -m pip wheel --no-deps ./sdk/python -w /tmp/agent-operations-wheels
+      - name: Install example frameworks
+        run: python -m pip install ./sdk/python -r examples/integrations/requirements.txt
+      - name: Test real framework integrations
+        run: node scripts/test-integrations.mjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -63,22 +69,4 @@ jobs:
       - name: Build the deployment image
         run: docker build -t agent-operations:test .
       - name: Verify the image can serve the API and launch Chromium
-        run: |
-          AOP_SMOKE_TOKEN=$(openssl rand -hex 32)
-          AOP_SMOKE_MASTER=$(openssl rand -hex 32)
-          echo "::add-mask::$AOP_SMOKE_TOKEN"
-          docker run -d --name agent-operations-smoke -p 127.0.0.1:4312:4300 -e ADMIN_TOKEN="$AOP_SMOKE_TOKEN" -e MASTER_KEY="$AOP_SMOKE_MASTER" agent-operations:test
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:4312/readyz > /dev/null; then break; fi
-            sleep 1
-          done
-          curl --fail --silent http://127.0.0.1:4312/readyz
-          curl --fail --silent --output /tmp/aop-workspace.json -X POST http://127.0.0.1:4312/api/v1/workspaces -H "Authorization: Bearer $AOP_SMOKE_TOKEN" -H "Content-Type: application/json" -d '{"name":"Container smoke test"}'
-          node -e 'const fs=require("node:fs");if(!JSON.parse(fs.readFileSync("/tmp/aop-workspace.json")).token)process.exit(1)'
-          docker exec agent-operations-smoke node --input-type=module -e 'import {chromium} from "playwright";const browser=await chromium.launch({headless:true});const page=await browser.newPage();await page.setContent("<h1>Browser ready</h1>");if(await page.locator("h1").innerText()!=="Browser ready")throw new Error("Browser check failed");await browser.close();'
-      - name: Container logs
-        if: failure()
-        run: docker logs agent-operations-smoke || true
-      - name: Clean up the smoke container
-        if: always()
-        run: docker rm -f agent-operations-smoke || true
+        run: bash scripts/container-smoke.sh agent-operations:test

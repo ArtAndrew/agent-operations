@@ -1,0 +1,101 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  sdk:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Verify version and package the SDKs
+        run: |
+          node -e 'const p=require("./package.json");if("v"+p.version!==process.env.GITHUB_REF_NAME)throw new Error("Tag does not match package version")'
+          mkdir -p release-assets
+          npm pack ./sdk/typescript --pack-destination release-assets
+          python -m pip wheel --no-deps ./sdk/python -w release-assets
+      - name: Install and import the actual archives
+        run: |
+          mkdir -p /tmp/aop-sdk-consumer
+          npm install --prefix /tmp/aop-sdk-consumer "$PWD/release-assets/agent-operations-sdk-0.1.0.tgz"
+          cd /tmp/aop-sdk-consumer
+          node --input-type=module -e 'import {AgentOperations} from "@agent-operations/sdk";if(typeof AgentOperations!=="function")throw new Error("Missing SDK export")'
+          python -m pip install "$GITHUB_WORKSPACE/release-assets/agent_operations_sdk-0.1.0-py3-none-any.whl"
+          python -c 'from agent_operations import AgentOperations; assert callable(AgentOperations)'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-assets
+          path: release-assets/*
+          retention-days: 3
+  images:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build and verify a native image
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker build --label org.opencontainers.image.source=https://github.com/ArtAndrew/agent-operations --label org.opencontainers.image.revision="$GITHUB_SHA" --label org.opencontainers.image.version="$VERSION" -t "agent-operations:$VERSION" .
+          bash scripts/container-smoke.sh "agent-operations:$VERSION"
+          mkdir -p release-assets
+          docker save "agent-operations:$VERSION" | gzip -1 > "release-assets/agent-operations-linux-$ARCH.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.arch }}
+          path: release-assets/*
+          compression-level: 0
+          retention-days: 3
+  publish:
+    needs: [sdk, images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Publish verified assets and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd release-assets
+          sha256sum *.tgz *.whl *.tar.gz > SHA256SUMS
+          cd ..
+          cp docs/releases/v0.1.0.md release-assets/RELEASE.md
+          printf '\nBuild provenance: source commit `%s`; [release workflow](%s/%s/actions/runs/%s).\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> release-assets/RELEASE.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "A release with this tag already exists; refusing to replace its assets."
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Agent Operations $GITHUB_REF_NAME" --notes-file release-assets/RELEASE.md release-assets/*.tgz release-assets/*.whl release-assets/*.tar.gz release-assets/SHA256SUMS

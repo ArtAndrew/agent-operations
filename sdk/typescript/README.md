@@ -2,10 +2,16 @@
 
 Apache-2.0. This client has no runtime dependencies and uses the standard Fetch API.
 
-Build from the repository with `pnpm build`, or run `tsc -p sdk/typescript/tsconfig.json`. Import `sdk/typescript/dist/index.js` from your application. This repository does not assume the package has been published to npm.
+Install the archive directly from [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.1.0):
+
+```sh
+npm install https://github.com/ArtAndrew/agent-operations/releases/download/v0.1.0/agent-operations-sdk-0.1.0.tgz
+```
+
+Alternatively, build from the repository with `pnpm build` and import `sdk/typescript/dist/index.js`. The package is distributed through GitHub; it does not require publication to the npm registry.
 
 ```ts
-import { AgentOperations } from "./sdk/typescript/dist/index.js";
+import { AgentOperations } from "@agent-operations/sdk";
 
 const client = new AgentOperations({
   baseUrl: process.env.AGENT_OPERATIONS_URL!,
