@@ -1,0 +1,63 @@
+name: agent-operations
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: agent_operations
+      POSTGRES_USER: agent_operations
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env with node scripts/setup-env.mjs}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_operations -d agent_operations"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build: .
+    image: agent-operations:local
+    command: ["node", "dist/cli.js", "api"]
+    init: true
+    environment: &app-environment
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "4300"
+      DATA_DIR: /app/.data
+      DATABASE_URL: postgresql://agent_operations:${POSTGRES_PASSWORD}@postgres:5432/agent_operations
+      MASTER_KEY: ${MASTER_KEY:?Generate .env with node scripts/setup-env.mjs}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Generate .env with node scripts/setup-env.mjs}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://127.0.0.1:4300}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    ports:
+      - "127.0.0.1:4300:4300"
+    volumes:
+      - artifacts:/app/.data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+  worker:
+    image: agent-operations:local
+    build: .
+    command: ["node", "dist/cli.js", "worker"]
+    init: true
+    shm_size: 1gb
+    environment: *app-environment
+    volumes:
+      - artifacts:/app/.data
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  postgres-data:
+  artifacts:

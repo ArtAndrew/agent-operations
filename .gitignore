@@ -1,0 +1,17 @@
+node_modules/
+dist/
+web-dist/
+.data/
+.env
+.env.*
+!.env.example
+coverage/
+playwright-report/
+test-results/
+*.log
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+build/
+*.egg-info/
