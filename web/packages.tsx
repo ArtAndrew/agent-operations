@@ -344,6 +344,15 @@ export function PackagesView({ me }: { me: Me }) {
               setBusy(true);
               setError("");
               try {
+                const digest = await crypto.subtle.digest(
+                  "SHA-256",
+                  new TextEncoder().encode(JSON.stringify([run.id, caseId])),
+                );
+                const requestKey =
+                  "package-" +
+                  Array.from(new Uint8Array(digest), (byte) =>
+                    byte.toString(16).padStart(2, "0"),
+                  ).join("");
                 const result = await send<{ run: { id: string } }>(
                   "/api/v1/runs",
                   {
@@ -352,7 +361,7 @@ export function PackagesView({ me }: { me: Me }) {
                     input: { caseId, title, body },
                   },
                   "POST",
-                  { "Idempotency-Key": `package:${run.id}:${caseId}` },
+                  { "Idempotency-Key": requestKey },
                 );
                 setRun(undefined);
                 location.hash = "/runs/" + result.run.id;
@@ -367,7 +376,7 @@ export function PackagesView({ me }: { me: Me }) {
             <Field label="Case ID">
               <input
                 required
-                maxLength={150}
+                maxLength={200}
                 value={caseId}
                 onChange={(e) => setCaseId(e.target.value)}
               />

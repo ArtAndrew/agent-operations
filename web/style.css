@@ -1084,6 +1084,8 @@ fieldset {
 }
 .run-meta > span {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 6px;
 }
@@ -1092,7 +1094,9 @@ fieldset {
   font-weight: 500;
 }
 .run-meta code {
+  min-width: 0;
   max-width: 250px;
+  overflow-wrap: anywhere;
   text-overflow: ellipsis;
   overflow: hidden;
 }
@@ -1680,6 +1684,7 @@ fieldset {
 }
 .business-result {
   margin-bottom: 20px;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 600px) {

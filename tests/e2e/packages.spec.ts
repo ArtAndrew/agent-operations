@@ -84,7 +84,7 @@ test("install, connect, create after lost response, and wait for completed closu
   await card.getByRole("button", { name: "Run operation" }).click();
   await page
     .getByLabel("Case ID", { exact: true })
-    .fill("case-ui-" + Date.now());
+    .fill("case-ui-\u03b1-" + Date.now());
   await page
     .getByLabel("Issue title", { exact: true })
     .fill("Investigate a customer case");
