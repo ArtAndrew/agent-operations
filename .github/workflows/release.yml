@@ -8,7 +8,6 @@ jobs:
   verify:
     uses: ./.github/workflows/ci.yml
   sdk:
-    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +42,6 @@ jobs:
           path: release-assets/*
           retention-days: 3
   images:
-    needs: verify
     strategy:
       fail-fast: false
       matrix:
@@ -75,7 +73,7 @@ jobs:
           compression-level: 0
           retention-days: 3
   publish:
-    needs: [sdk, images]
+    needs: [verify, sdk, images]
     runs-on: ubuntu-latest
     permissions:
       contents: write
