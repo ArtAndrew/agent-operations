@@ -14,4 +14,6 @@ Running an installation internally and offering a managed Agent Operations servi
 
 Commercial terms, support, minimum commitments and any usage-based fees would be defined in that separate agreement.
 
+For the proposed managed service, current capabilities, provider responsibilities and a way to discuss a technical pilot, see [Cloud providers](cloud-providers.md). No commercial license or support commitment is granted merely by opening a pilot inquiry.
+
 This is source-available software, not an OSI-approved open-source server license.
