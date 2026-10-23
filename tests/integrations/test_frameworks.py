@@ -37,7 +37,7 @@ class FrameworkTests(unittest.TestCase):
         self.assertEqual(payload["status"], "WAITING_APPROVAL")
         approvals = self.client.approvals()["items"]
         approval = next(a for a in approvals if a["run_id"] == payload["run_id"])
-        self.client.decide(approval["id"], "approve", "Local integration test: reviewed exact supplier action")
+        self.client.decide(approval["id"], "APPROVED", "Local integration test: reviewed exact supplier action")
         completed = self.client.wait(payload["run_id"], timeout=60, stop_on_decision=False)
         self.assertEqual(completed["run"]["status"], "SUCCEEDED")
         self.assertEqual(completed["steps"][0]["attempts"], 1)

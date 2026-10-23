@@ -3,8 +3,10 @@
 A dependency-free Python 3.10+ client under Apache-2.0.
 
 ```sh
-python -m pip install ./sdk/python
+python -m pip install https://github.com/ArtAndrew/agent-operations/releases/download/v0.1.0/agent_operations_sdk-0.1.0-py3-none-any.whl
 ```
+
+From a source checkout, use `python -m pip install ./sdk/python` instead. The wheel is distributed through GitHub Release and does not require publication to PyPI.
 
 ```python
 import os

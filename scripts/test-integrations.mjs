@@ -51,6 +51,8 @@ try {
         AGENT_OPERATIONS_API_KEY: token,
         ANONYMIZED_TELEMETRY: "false",
         BROWSER_USE_LOGGING_LEVEL: "error",
+        LANGSMITH_TRACING: "false",
+        LANGCHAIN_TRACING_V2: "false",
       },
       stdio: "inherit",
     },
