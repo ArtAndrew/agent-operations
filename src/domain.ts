@@ -40,7 +40,21 @@ export const AssertionSchema = z.object({
   operator: z.enum(["equals", "exists", "contains", "greaterThan", "lessThan"]),
   value: z.unknown().optional(),
 });
+const githubTarget = {
+  owner: z.string().regex(/^[A-Za-z0-9-]{1,100}$/),
+  repo: z.string().regex(/^(?!\.{1,2}$)[A-Za-z0-9_.-]{1,100}$/),
+  caseId: z.string().min(1).max(200),
+};
 export const VerificationSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("github_issue"),
+    connection: z.string(),
+    ...githubTarget,
+    title: z.string(),
+    body: z.string(),
+    number: z.union([z.number().int().positive(), z.string()]).optional(),
+    waitForCompleted: z.boolean().default(false),
+  }),
   z.object({
     kind: z.literal("http"),
     connection: z.string(),
@@ -72,8 +86,23 @@ const common = {
     })
     .default({ maxAttempts: 3, delayMs: 1000 }),
   verify: VerificationSchema.optional(),
+  recheck: z
+    .object({
+      intervalMs: z.number().int().min(1000).max(3600000),
+      maxWaitMs: z.number().int().min(1000).max(2592000000),
+    })
+    .optional(),
 };
 export const StepSchema = z.discriminatedUnion("kind", [
+  z.object({
+    ...common,
+    kind: z.literal("github_issue"),
+    connection: z.string(),
+    ...githubTarget,
+    action: z.enum(["create", "wait"]),
+    issueTitle: z.string().max(256),
+    body: z.string().max(60000),
+  }),
   z.object({
     ...common,
     kind: z.literal("http"),
@@ -119,6 +148,15 @@ export const OperationSchema = z
         ctx.addIssue({ code: "custom", message, path: ["steps", i] });
       if (ids.has(step.id)) issue("Step identifiers must be unique");
       ids.add(step.id);
+      if (
+        step.kind === "github_issue" &&
+        ((step.action === "create" && step.effect !== "write") ||
+          (step.action === "wait" && step.effect !== "read") ||
+          step.verify?.kind !== "github_issue")
+      )
+        issue(
+          "GitHub create must be a verified write; wait must be a verified read",
+        );
       if (step.effect === "write" && (!step.businessKey || !step.verify))
         issue("Write steps require a stable businessKey and verification");
       if (
@@ -175,6 +213,7 @@ export type BrowserAction = z.infer<typeof BrowserActionSchema>;
 export type RunStatus =
   | "QUEUED"
   | "RUNNING"
+  | "WAITING_EXTERNAL"
   | "WAITING_APPROVAL"
   | "RETRYING"
   | "NEEDS_ATTENTION"
@@ -241,6 +280,8 @@ export interface StepRun {
   error: string | null;
   started_at: string | null;
   finished_at: string | null;
+  recheck_started_at: string | null;
+  recheck_count: number;
 }
 export interface ExecutionResult {
   output: unknown;

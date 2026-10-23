@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 20
   api:
-    image: agent-operations:0.1.0
+    image: agent-operations:0.2.0
     command: ["node", "dist/cli.js", "api"]
     init: true
     environment: &environment
@@ -31,7 +31,7 @@ services:
     volumes:
       - artifacts:/app/.data
   worker:
-    image: agent-operations:0.1.0
+    image: agent-operations:0.2.0
     command: ["node", "dist/cli.js", "worker"]
     init: true
     shm_size: 1gb

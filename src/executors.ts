@@ -1,3 +1,4 @@
+import { Github } from "./github.js";
 import { chromium, type Browser } from "playwright";
 import type { Store } from "./store.js";
 import { Network } from "./network.js";
@@ -15,7 +16,7 @@ import {
 } from "./domain.js";
 import { checkAssertions, validateInput } from "./util.js";
 export interface VerificationResult {
-  status: "confirmed" | "absent" | "unknown";
+  status: "confirmed" | "absent" | "unknown" | "pending";
   output?: unknown;
   reason?: string;
   usage: Usage;
@@ -83,6 +84,12 @@ export class Executors {
     actionKey: string | undefined,
     signal: AbortSignal,
   ): Promise<ExecutionResult> {
+    if (step.kind === "github_issue")
+      return new Github(this.store, this.network).create(
+        workspaceId,
+        step,
+        signal,
+      );
     if (step.kind === "transform") {
       const errors = checkAssertions(step.value, step.assertions);
       if (errors.length) throw new ExecutionError(errors.join("; "));
@@ -268,6 +275,12 @@ export class Executors {
       verification.connection,
     );
     this.store.checkBinding(connector, binding);
+    if (verification.kind === "github_issue")
+      return new Github(this.store, this.network).verify(
+        workspaceId,
+        verification,
+        signal,
+      );
     if (verification.kind === "http") {
       const r = await this.network.http(
         this.network.path(connector.base_url, verification.request.path),

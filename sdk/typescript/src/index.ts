@@ -5,6 +5,7 @@ export type RunStatus =
   | "QUEUED"
   | "RUNNING"
   | "RETRYING"
+  | "WAITING_EXTERNAL"
   | "WAITING_APPROVAL"
   | "NEEDS_ATTENTION"
   | "SUCCEEDED"
@@ -161,6 +162,27 @@ export class AgentOperations {
       "/operations/" +
         encodeURIComponent(name) +
         (version ? "?version=" + version : ""),
+    );
+  }
+  packages() {
+    return this.request<{
+      catalog: Record<string, Json>[];
+      items: Record<string, Json>[];
+    }>("/packages");
+  }
+  installGithubPackage(configuration: {
+    name: string;
+    connection: string;
+    owner: string;
+    repo: string;
+    requireApproval?: boolean;
+    waitForCompleted?: boolean;
+    pollSeconds?: number;
+    maxWaitHours?: number;
+  }) {
+    return this.request<Record<string, Json>>(
+      "/packages/github-issues/install",
+      { method: "POST", body: configuration },
     );
   }
   operations() {

@@ -85,3 +85,7 @@ The alternate outcome is `failed`. It closes the action and prevents automatic r
 `GET /api/config` exposes the product version and whether local demo login is enabled. `GET /healthz` and `GET /readyz` are unauthenticated health checks.
 
 The default application request limit is 300 requests/minute per observed client IP, with a stricter login limit. When deploying behind a proxy, plan shared-IP rate limiting at the ingress; this server does not trust arbitrary forwarded headers.
+
+## Packages and external waits
+
+See [package API](packages.md#api) for installation and read-only connection checks. Run status now includes `WAITING_EXTERNAL`; `available_at` indicates the next scheduled check. `POST /runs/:id/reconcile` also wakes a waiting run. No webhook grants approval or directly marks a run successful.

@@ -32,7 +32,7 @@ export class Engine {
   async claim(): Promise<Run | undefined> {
     return this.store.db.transaction(async (tx) => {
       const ready =
-        "r.status IN ('QUEUED','RETRYING','RUNNING') AND r.available_at<=now() AND (r.lease_until IS NULL OR r.lease_until<now())";
+        "r.status IN ('QUEUED','RETRYING','RUNNING','WAITING_EXTERNAL') AND r.available_at<=now() AND (r.lease_until IS NULL OR r.lease_until<now())";
       const workspace = await tx.query<{
         id: string;
         max_concurrent_runs: number;
@@ -200,12 +200,62 @@ export class Engine {
         );
     });
   }
+  private async waitExternal(
+    run: Run,
+    step: Step,
+    actionKey: string | undefined,
+    reason: string,
+  ): Promise<boolean> {
+    if (!step.recheck) return false;
+    return this.fenced(run, async (tx) => {
+      const row = (
+        await tx.query<StepRun>(
+          "SELECT * FROM step_runs WHERE run_id=$1 AND step_id=$2",
+          [run.id, step.id],
+        )
+      ).rows[0]!;
+      if (
+        row.recheck_started_at &&
+        Date.now() - new Date(row.recheck_started_at).getTime() >=
+          step.recheck!.maxWaitMs
+      )
+        return false;
+      await tx.query(
+        "UPDATE step_runs SET status=$3,error=$4,recheck_started_at=COALESCE(recheck_started_at,now()),recheck_count=recheck_count+1 WHERE run_id=$1 AND step_id=$2",
+        [
+          run.id,
+          step.id,
+          step.effect === "write" ? "UNKNOWN" : "VERIFYING",
+          reason,
+        ],
+      );
+      if (actionKey)
+        await tx.query(
+          "UPDATE action_ledger SET status='UNKNOWN',updated_at=now() WHERE workspace_id=$1 AND action_key=$2 AND status<>'SUCCEEDED'",
+          [run.workspace_id, actionKey],
+        );
+      await tx.query(
+        "UPDATE runs SET status='WAITING_EXTERNAL',error=$2,available_at=now()+($3::integer*interval '1 millisecond'),lease_token=NULL,lease_until=NULL,updated_at=now() WHERE id=$1",
+        [run.id, reason, step.recheck!.intervalMs],
+      );
+      await this.store.event(
+        tx,
+        run.workspace_id,
+        run.id,
+        "run.waiting_external",
+        "worker",
+        { stepId: step.id, reason, check: row.recheck_count + 1 },
+      );
+      return true;
+    });
+  }
   private async attention(
     run: Run,
     step: Step,
     actionKey: string | undefined,
     error: string,
   ) {
+    if (await this.waitExternal(run, step, actionKey, error)) return;
     await this.fenced(run, async (tx) => {
       await tx.query(
         "UPDATE step_runs SET status='UNKNOWN',error=$3 WHERE run_id=$1 AND step_id=$2",
@@ -246,6 +296,16 @@ export class Engine {
         steps: { ...run.outputs, [step.id]: output },
         output,
       });
+      if (
+        verifier.kind === "github_issue" &&
+        verifier.number === undefined &&
+        output &&
+        typeof output === "object" &&
+        "number" in output &&
+        Number.isInteger(output.number) &&
+        Number(output.number) > 0
+      )
+        verifier.number = Number(output.number);
       result = await this.executors.verify(
         run.workspace_id,
         verifier,
@@ -341,9 +401,19 @@ export class Engine {
       if (step.effect === "write")
         actionKey = hash({
           workspace: run.workspace_id,
-          operation: run.operation_name,
-          step: step.id,
-          businessKey: String(step.businessKey),
+          ...(step.kind === "github_issue"
+            ? {
+                provider: "github",
+                connection: step.connections?.action?.id,
+                owner: step.owner.toLowerCase(),
+                repo: step.repo.toLowerCase(),
+                caseId: step.caseId,
+              }
+            : {
+                operation: run.operation_name,
+                step: step.id,
+                businessKey: String(step.businessKey),
+              }),
         });
       timeout = setTimeout(
         () => controller.abort(new Error("Step timeout")),
@@ -352,7 +422,8 @@ export class Engine {
       timeout.unref();
       if (
         run.cancel_requested &&
-        !["DISPATCHED", "VERIFYING", "UNKNOWN"].includes(sr.status)
+        (step.effect !== "write" ||
+          !["DISPATCHED", "VERIFYING", "UNKNOWN"].includes(sr.status))
       ) {
         await this.release(run, "CANCELLED", "Cancelled before dispatch");
         return;
@@ -360,7 +431,8 @@ export class Engine {
       const prepared = await this.fenced(run, async (tx, current) => {
         if (
           current.cancel_requested &&
-          !["DISPATCHED", "VERIFYING", "UNKNOWN"].includes(sr.status)
+          (step.effect !== "write" ||
+            !["DISPATCHED", "VERIFYING", "UNKNOWN"].includes(sr.status))
         )
           return "cancelled";
         await tx.query(
@@ -677,9 +749,17 @@ export class Engine {
             actionKey,
             verification.reason || "Result verification failed",
           );
-        else
+        else if (
+          !(await this.waitExternal(
+            run,
+            step,
+            undefined,
+            verification.reason || "Waiting for external result",
+          ))
+        )
           throw new ExecutionError(
-            verification.reason || "Result verification failed",
+            verification.reason ||
+              "External result was not confirmed before the deadline",
           );
         return;
       }

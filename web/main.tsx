@@ -1,3 +1,4 @@
+import { PackagesView } from "./packages.js";
 import React, { useState, useEffect, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -112,6 +113,7 @@ function App() {
     { path: "/runs", label: "Runs", icon: Workflow },
     { path: "/operations", label: "Operations", icon: FileCode2 },
     { path: "/approvals", label: "Approvals", icon: ShieldCheck },
+    { path: "/packages", label: "Packages", icon: Blocks },
     { path: "/connections", label: "Connections", icon: Unplug },
     { path: "/usage", label: "Usage", icon: Activity },
     { path: "/settings", label: "Settings", icon: Settings },
@@ -123,6 +125,7 @@ function App() {
     content = <Runs onRun={() => setRunModal(true)} canRun={canRun} />;
   else if (route === "/operations") content = <Operations me={me} />;
   else if (route === "/approvals") content = <Approvals me={me} />;
+  else if (route === "/packages") content = <PackagesView me={me} />;
   else if (route === "/connections") content = <Connections me={me} />;
   else if (route === "/usage")
     content = <UsageView canReview={["admin", "reviewer"].includes(me.role)} />;
@@ -163,7 +166,7 @@ function App() {
           <div className="runtime-state">
             <span className="live-dot" /> Durable execution
           </div>
-          <small>Agent Operations · v0.1.0</small>
+          <small>Agent Operations · v0.2.0</small>
           <button className="text-button" onClick={() => void logout()}>
             <LogOut size={15} /> Sign out
           </button>
@@ -618,6 +621,7 @@ function Runs({ onRun, canRun }: { onRun: () => void; canRun: boolean }) {
           onChange={(e) => setStatus(e.target.value)}
         >
           <option value="">All statuses</option>
+          <option value="WAITING_EXTERNAL">Waiting for external result</option>
           {[
             "QUEUED",
             "RUNNING",
@@ -815,6 +819,58 @@ function RunDetail({ id, me }: { id: string; me: Me }) {
           <CopyButton value={run.idempotency_key} />
         </span>
       </div>
+      {detail.data.steps.some(
+        (step) =>
+          step.step_id === "create_issue" &&
+          step.resolved?.kind === "github_issue",
+      ) &&
+      run.outputs.create_issue &&
+      typeof run.outputs.create_issue === "object" ? (
+        <section className="panel business-result">
+          <span className="eyebrow">EXTERNAL RESULT</span>
+          <h3>GitHub issue verified</h3>
+          <p>Case: {String(run.input.caseId || "")}</p>
+          <a
+            href={
+              /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(
+                String((run.outputs.create_issue as { url?: string }).url),
+              )
+                ? String((run.outputs.create_issue as { url?: string }).url)
+                : undefined
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open verified issue ↗
+          </a>
+          <p>
+            {run.status === "SUCCEEDED"
+              ? "The configured operation finished."
+              : "Issue creation is confirmed. Follow the remaining operation state below."}
+          </p>
+        </section>
+      ) : null}
+      {run.status === "WAITING_EXTERNAL" ? (
+        <div className="info-banner">
+          <Clock3 />
+          <div>
+            <strong>Waiting for an external result</strong>
+            <p>{run.error}</p>
+            <p>
+              Next check: {date(run.available_at)}. Progress is saved; you can
+              leave this page.
+            </p>
+          </div>
+          {canOperate || canReview ? (
+            <button
+              className="secondary"
+              onClick={() => setAction("reconcile")}
+            >
+              Check now
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {run.status === "NEEDS_ATTENTION" ? (
         <div className="attention-banner">
           <Activity />
@@ -841,7 +897,7 @@ function RunDetail({ id, me }: { id: string; me: Me }) {
             ) : null}
           </div>
         </div>
-      ) : run.error ? (
+      ) : run.error && run.status !== "WAITING_EXTERNAL" ? (
         <ErrorBox>{run.error}</ErrorBox>
       ) : null}
       {run.status === "WAITING_APPROVAL" ? (
@@ -911,7 +967,14 @@ function RunDetail({ id, me }: { id: string; me: Me }) {
                   </div>
                   <Badge status={step.status} />
                 </div>
-                {step.error ? <ErrorBox>{step.error}</ErrorBox> : null}
+                {step.error ? (
+                  run.status === "WAITING_EXTERNAL" &&
+                  step.status === "VERIFYING" ? (
+                    <p className="muted">{step.error}</p>
+                  ) : (
+                    <ErrorBox>{step.error}</ErrorBox>
+                  )
+                ) : null}
                 {step.digest ? (
                   <p className="digest">
                     Action digest <code>{step.digest}</code>

@@ -1,3 +1,4 @@
+import { Packages } from "./packages.js";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
@@ -11,6 +12,7 @@ import { Store, validateHeaders } from "./store.js";
 import { Engine } from "./engine.js";
 import {
   AppError,
+  ExecutionError,
   type Identity,
   type Role,
   type Run,
@@ -102,6 +104,10 @@ export async function app(
           details: error.issues,
         },
       });
+    if (error instanceof ExecutionError)
+      return reply.status(502).send({
+        error: { code: "PROVIDER_UNAVAILABLE", message: error.message },
+      });
     if (error instanceof AppError)
       return reply
         .status(error.status)
@@ -144,6 +150,43 @@ export async function app(
       );
     return request.identity;
   };
+  const packages = new Packages(store);
+  server.get("/api/v1/packages", async (request) =>
+    packages.list(identity(request).workspaceId),
+  );
+  server.post("/api/v1/packages/github-issues/check", async (request) =>
+    packages.check(identity(request, ["admin"]), request.body),
+  );
+  server.post(
+    "/api/v1/packages/github-issues/install",
+    async (request, reply) => {
+      const result = await packages.install(
+        identity(request, ["admin"]),
+        request.body,
+      );
+      reply.status(201);
+      return result;
+    },
+  );
+  await server.register(async (hooks) => {
+    hooks.removeContentTypeParser("application/json");
+    hooks.addContentTypeParser(
+      "application/json",
+      { parseAs: "buffer" },
+      (_request, body, done) => done(null, body),
+    );
+    hooks.post<{ Params: { id: string } }>(
+      "/hooks/github/:id",
+      async (request) =>
+        packages.webhook(
+          request.params.id,
+          request.body as Buffer,
+          String(request.headers["x-hub-signature-256"] || ""),
+          String(request.headers["x-github-delivery"] || ""),
+          String(request.headers["x-github-event"] || ""),
+        ),
+    );
+  });
   const setSession = (
     reply: import("fastify").FastifyReply,
     token: string,
@@ -164,7 +207,7 @@ export async function app(
   });
   server.get("/api/config", async () => ({
     name: "Agent Operations",
-    version: "0.1.0",
+    version: "0.2.0",
     demo: !!options.demoToken,
   }));
   server.post(

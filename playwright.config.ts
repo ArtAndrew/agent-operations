@@ -23,6 +23,7 @@ export default defineConfig({
       DEMO_PROVIDER_PORT: "4311",
       DATA_DIR: ".data/e2e",
       NODE_ENV: "test",
+      ALLOWED_ORIGINS: "http://127.0.0.1:4312",
     },
   },
 });

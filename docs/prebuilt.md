@@ -1,6 +1,6 @@
 # Install from GitHub Release
 
-[Release v0.1.0](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.1.0) contains source, SDK archives, Linux Docker image archives, and `SHA256SUMS`. No package-registry account is needed. Source demo instructions are in the [quickstart](quickstart.md).
+[Release v0.2.0](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.2.0) contains source, SDK archives, Linux Docker image archives, and `SHA256SUMS`. No package-registry account is needed. Source demo instructions are in the [quickstart](quickstart.md).
 
 ## Docker image
 
@@ -10,7 +10,7 @@ Download the image matching your Docker engine: `agent-operations-linux-amd64.ta
 docker load --input agent-operations-linux-arm64.tar.gz
 ```
 
-The loaded tag is `agent-operations:0.1.0`. Both archives are built and checked on their native Linux architecture. To create a persistent local installation, from a clone of the repository:
+The loaded tag is `agent-operations:0.2.0`. Both archives are built and checked on their native Linux architecture. To create a persistent local installation, from a clone of the repository:
 
 ```sh
 node scripts/setup-env.mjs
@@ -24,7 +24,7 @@ Save the initial workspace key and use it to sign in at <http://127.0.0.1:4300>.
 ## TypeScript SDK
 
 ```sh
-npm install https://github.com/ArtAndrew/agent-operations/releases/download/v0.1.0/agent-operations-sdk-0.1.0.tgz
+npm install https://github.com/ArtAndrew/agent-operations/releases/download/v0.2.0/agent-operations-sdk-0.2.0.tgz
 ```
 
 ```ts
@@ -36,7 +36,7 @@ Requires Node.js 22.12+. The archive contains JavaScript, type declarations, REA
 ## Python SDK
 
 ```sh
-python -m pip install https://github.com/ArtAndrew/agent-operations/releases/download/v0.1.0/agent_operations_sdk-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/ArtAndrew/agent-operations/releases/download/v0.2.0/agent_operations_sdk-0.2.0-py3-none-any.whl
 ```
 
 ```python

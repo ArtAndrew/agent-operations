@@ -14,9 +14,13 @@ try {
 }
 const command = process.argv[2] || "serve";
 async function main() {
+  if (command === "mcp") {
+    await (await import("./mcp.js")).runMcp();
+    return;
+  }
   if (command === "help" || command === "--help") {
     console.log(
-      "Agent Operations\n\nCommands:\n  serve            Start API, dashboard and workers\n  api              Start API and dashboard without workers\n  worker           Start execution workers (requires DATABASE_URL)\n  demo             Start a local workspace and supplier portal\n  migrate          Apply database migrations\n  token            Print the local platform administrator token\n  workspace NAME   Create a workspace and print its initial API key\n\nConfiguration is read from .env and environment variables.",
+      "Agent Operations\n\nCommands:\n  mcp              Serve installed operations over MCP stdio\n  serve            Start API, dashboard and workers\n  api              Start API and dashboard without workers\n  worker           Start execution workers (requires DATABASE_URL)\n  demo             Start a local workspace and supplier portal\n  migrate          Apply database migrations\n  token            Print the local platform administrator token\n  workspace NAME   Create a workspace and print its initial API key\n\nConfiguration is read from .env and environment variables.",
     );
     return;
   }

@@ -12,6 +12,7 @@ Choose a business key from a durable business identifier, such as a purchase req
 
 ```text
 QUEUED → RUNNING → SUCCEEDED
+            ├── WAITING_EXTERNAL → scheduled check / webhook wake-up
             ├── WAITING_APPROVAL → QUEUED
             ├── RETRYING → RUNNING
             ├── NEEDS_ATTENTION → reconciliation / operator resolution
@@ -65,3 +66,9 @@ Cancellation is immediate before dispatch. An in-flight action must be verified 
 Attempt counters record the requests and browser/model usage observed by workers. Abrupt process termination can leave an attempt unrecorded or prevent final usage from being reported. These counters support operations and capacity planning; they are not an exactly-once billing ledger.
 
 The audit chain detects altered retained events when checked against its own stored hashes. A database administrator can rewrite the full chain, including its head. Export and externally anchor chain heads if independent tamper evidence is required.
+
+## Bounded external waits (v0.2)
+
+A step can opt into `recheck: {intervalMs, maxWaitMs}`. Unknown writes then enter `WAITING_EXTERNAL` while retaining their dispatched ledger entry. Workers only verify them; they do not replay the write. A read-only wait can also remain pending. The deadline starts at the first deferred check and is persisted across restarts. At expiry an uncertain write needs attention; an unfinished read wait fails. Manual reconciliation can request a fresh check without extending the deadline.
+
+GitHub package actions share case identity across operation installations in the same workspace, connection and repository. The generic operation/step business-key semantics above remain unchanged for other action types.

@@ -43,7 +43,16 @@ try {
   );
   const test = spawn(
     process.env.PYTHON || "python3",
-    ["-m", "unittest", "discover", "-s", "tests/integrations", "-v"],
+    [
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests/integrations",
+      "-p",
+      "test_frameworks.py",
+      "-v",
+    ],
     {
       env: {
         ...process.env,

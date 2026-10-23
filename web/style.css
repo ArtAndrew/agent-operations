@@ -1656,3 +1656,39 @@ fieldset {
     padding: 18px 20px;
   }
 }
+
+.package-catalog {
+  margin-bottom: 28px;
+}
+.package-catalog .panel,
+.operation-grid .panel,
+.business-result {
+  padding: 24px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.check-row input {
+  width: auto;
+}
+.badge.waiting_external {
+  background: #e9f0ff;
+  color: #3556a5;
+}
+.business-result {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .info-banner {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .info-banner > .secondary {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
