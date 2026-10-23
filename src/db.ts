@@ -92,6 +92,21 @@ export async function migrate(db: Database) {
       );
       await tx.query("INSERT INTO schema_migrations(version) VALUES(2)");
     }
+    if (
+      !(await tx.query("SELECT version FROM schema_migrations WHERE version=3"))
+        .rows.length
+    ) {
+      await tx.query(
+        "ALTER TABLE step_runs ADD COLUMN recheck_started_at timestamptz, ADD COLUMN recheck_count integer NOT NULL DEFAULT 0",
+      );
+      await tx.query(
+        `CREATE TABLE package_installations(id text PRIMARY KEY, workspace_id text NOT NULL REFERENCES workspaces(id), package_id text NOT NULL, package_version text NOT NULL, operation_id text NOT NULL REFERENCES operations(id), connection_id text NOT NULL REFERENCES connectors(id), config jsonb NOT NULL, webhook_secret text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(workspace_id,operation_id))`,
+      );
+      await tx.query(
+        `CREATE TABLE webhook_deliveries(installation_id text NOT NULL REFERENCES package_installations(id), delivery_id text NOT NULL, received_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(installation_id,delivery_id))`,
+      );
+      await tx.query("INSERT INTO schema_migrations(version) VALUES(3)");
+    }
   });
 }
 const migration = `

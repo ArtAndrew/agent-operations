@@ -54,3 +54,15 @@ PYTHON="$(command -v python)" node scripts/test-integrations.mjs
 The runner starts its own isolated local supplier and server, tests repeated submissions, uncertainty routing, tool registration, approval and real browser execution, then stops them. No model API key is required. CI runs the same tests on Linux.
 
 Official API references: [LangGraph quickstart](https://docs.langchain.com/oss/python/langgraph/quickstart), [browser-use custom tools](https://docs.browser-use.com/open-source/customize/tools/add). These examples are Apache-2.0, like the rest of `examples/`. Dependencies retain their own licenses. There is no affiliation or endorsement claim.
+
+## Deep Agents and GitHub packages
+
+Install `requirements-deepagents.txt` and the Python SDK in a separate virtual environment. The pinned browser-use and Deep Agents versions require different Google SDK versions, so do not combine their requirement files. `deepagents_github.py` exports `build_agent(client, model, operation, case_id)`. Pass a configured chat model and the name of an installed GitHub package operation. The host application supplies a stable case ID. The agent can submit and inspect runs but cannot approve them.
+
+```sh
+python3 -m venv .venv-deepagents
+.venv-deepagents/bin/python -m pip install ./sdk/python -r examples/integrations/requirements-deepagents.txt
+.venv-deepagents/bin/python -m unittest discover -s tests/integrations -p test_deepagents.py -v
+```
+
+CI checks real Deep Agents tool dispatch with a deterministic model fixture, not a paid model or autonomous quality benchmark. The live GitHub smoke script separately validates the provider integration. See [MCP setup](../../docs/mcp.md) for framework-independent access.

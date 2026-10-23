@@ -31,10 +31,10 @@ jobs:
       - name: Install and import the actual archives
         run: |
           mkdir -p /tmp/aop-sdk-consumer
-          npm install --prefix /tmp/aop-sdk-consumer "$PWD/release-assets/agent-operations-sdk-0.1.0.tgz"
+          npm install --prefix /tmp/aop-sdk-consumer "$PWD/release-assets/agent-operations-sdk-${GITHUB_REF_NAME#v}.tgz"
           cd /tmp/aop-sdk-consumer
           node --input-type=module -e 'import {AgentOperations} from "@agent-operations/sdk";if(typeof AgentOperations!=="function")throw new Error("Missing SDK export")'
-          python -m pip install "$GITHUB_WORKSPACE/release-assets/agent_operations_sdk-0.1.0-py3-none-any.whl"
+          python -m pip install "$GITHUB_WORKSPACE/release-assets/agent_operations_sdk-${GITHUB_REF_NAME#v}-py3-none-any.whl"
           python -c 'from agent_operations import AgentOperations; assert callable(AgentOperations)'
       - uses: actions/upload-artifact@v4
         with:
@@ -90,7 +90,7 @@ jobs:
           cd release-assets
           sha256sum *.tgz *.whl *.tar.gz > SHA256SUMS
           cd ..
-          cp docs/releases/v0.1.0.md release-assets/RELEASE.md
+          cp "docs/releases/$GITHUB_REF_NAME.md" release-assets/RELEASE.md
           printf '\nBuild provenance: source commit `%s`; [release workflow](%s/%s/actions/runs/%s).\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> release-assets/RELEASE.md
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "A release with this tag already exists; refusing to replace its assets."

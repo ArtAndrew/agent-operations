@@ -12,6 +12,7 @@ test-results/
 __pycache__/
 *.pyc
 .venv/
+.venv-deepagents/
 .DS_Store
 build/
 *.egg-info/

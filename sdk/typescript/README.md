@@ -2,10 +2,10 @@
 
 Apache-2.0. This client has no runtime dependencies and uses the standard Fetch API.
 
-Install the archive directly from [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.1.0):
+Install the archive directly from [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.2.0):
 
 ```sh
-npm install https://github.com/ArtAndrew/agent-operations/releases/download/v0.1.0/agent-operations-sdk-0.1.0.tgz
+npm install https://github.com/ArtAndrew/agent-operations/releases/download/v0.2.0/agent-operations-sdk-0.2.0.tgz
 ```
 
 Alternatively, build from the repository with `pnpm build` and import `sdk/typescript/dist/index.js`. The package is distributed through GitHub; it does not require publication to the npm registry.

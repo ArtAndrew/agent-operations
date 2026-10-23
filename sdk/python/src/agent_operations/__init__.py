@@ -56,6 +56,12 @@ class AgentOperations:
     def operation(self, name: str, version: int | None = None) -> dict:
         return self._request("/operations/" + quote(name, safe="") + (f"?version={version}" if version else ""))
 
+    def packages(self) -> dict:
+        return self._request("/packages")
+
+    def install_github_package(self, configuration: dict) -> dict:
+        return self._request("/packages/github-issues/install", "POST", configuration)
+
     def submit(self, operation: str, inputs: dict, *, idempotency_key: str, version: int | None = None) -> dict:
         if not idempotency_key:
             raise ValueError("An idempotency key is required")

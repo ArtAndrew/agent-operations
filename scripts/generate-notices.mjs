@@ -81,7 +81,10 @@ for (const entry of texts.values())
     "\n### " +
     [...entry.packages].sort().join(", ") +
     "\n\n~~~~text\n" +
-    entry.content.trim() +
+    entry.content
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+$/gm, "")
+      .trim() +
     "\n~~~~\n";
 await writeFile(join(root, "THIRD_PARTY_NOTICES.md"), output);
 console.log(

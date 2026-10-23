@@ -1084,6 +1084,8 @@ fieldset {
 }
 .run-meta > span {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 6px;
 }
@@ -1092,7 +1094,9 @@ fieldset {
   font-weight: 500;
 }
 .run-meta code {
+  min-width: 0;
   max-width: 250px;
+  overflow-wrap: anywhere;
   text-overflow: ellipsis;
   overflow: hidden;
 }
@@ -1654,5 +1658,42 @@ fieldset {
   }
   dialog > header {
     padding: 18px 20px;
+  }
+}
+
+.package-catalog {
+  margin-bottom: 28px;
+}
+.package-catalog .panel,
+.operation-grid .panel,
+.business-result {
+  padding: 24px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.check-row input {
+  width: auto;
+}
+.badge.waiting_external {
+  background: #e9f0ff;
+  color: #3556a5;
+}
+.business-result {
+  margin-bottom: 20px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .info-banner {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .info-banner > .secondary {
+    grid-column: 2;
+    justify-self: start;
   }
 }

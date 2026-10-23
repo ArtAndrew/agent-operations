@@ -18,6 +18,14 @@ The server and dashboard are source-available under [Elastic License 2.0](LICENS
 
 These selected frames from a real local run are held for readability. The supplier fixture persists an order, intentionally drops the response, and exposes a separate lookup endpoint. It makes no real purchase and uses no paid model. [Reproduce it yourself](docs/quickstart.md).
 
+## New in v0.2: installed operations for your agents
+
+Install the **GitHub issues** package from the dashboard. Connect a repository, choose the approval policy, and let an agent submit a case. The service verifies creation after a lost response and can wait for the issue to close as completed. Signed webhooks wake checks; polling covers missed events.
+
+[Package setup and limits](docs/packages.md) · [MCP connection](docs/mcp.md) · [Deep Agents example](examples/integrations/deepagents_github.py) · [Release notes](docs/releases/v0.2.0.md)
+
+The existing supplier demo remains local and requires no GitHub account. The GitHub package uses a real repository and creates real issues after any required approval. Use a private validation repository first.
+
 ## Try it locally
 
 Requires Node.js 22.12 or later and pnpm 11.25.0.
@@ -51,7 +59,7 @@ Example input:
 
 For `create-order`, change `mode` to `lose-response` to commit the order but lose the response. The worker checks the external result and completes without sending the write again. Use `unverifiable` to simulate an unavailable verification endpoint. Restore it in the supplier portal, then choose **Check again** on the run.
 
-For the exact released source, run `git checkout v0.1.0` after cloning. [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.1.0) also provides Linux Docker images and installable Python/TypeScript SDK archives. See [prebuilt installation](docs/prebuilt.md).
+For the exact released source, run `git checkout v0.2.0` after cloning. [GitHub Release](https://github.com/ArtAndrew/agent-operations/releases/tag/v0.2.0) also provides Linux Docker images and installable Python/TypeScript SDK archives. See [prebuilt installation](docs/prebuilt.md).
 
 ## Use it with your existing agent
 

@@ -237,8 +237,12 @@ export class Store {
     });
     return { id, ...input, secretHeaders: undefined };
   }
-  async connector(workspaceId: string, id: string): Promise<Connector> {
-    const result = await this.db.query<Connector>(
+  async connector(
+    workspaceId: string,
+    id: string,
+    sql: Sql = this.db,
+  ): Promise<Connector> {
+    const result = await sql.query<Connector>(
       "SELECT * FROM connectors WHERE workspace_id=$1 AND (id=$2 OR name=$2)",
       [workspaceId, id],
     );
@@ -259,7 +263,7 @@ export class Store {
         : {}),
     };
   }
-  async register(identity: Identity, raw: unknown) {
+  async register(identity: Identity, raw: unknown, transaction?: Sql) {
     const operation = OperationSchema.parse(raw);
     try {
       validateInput(operation.inputSchema, {});
@@ -271,8 +275,14 @@ export class Store {
         const connector = await this.connector(
           identity.workspaceId,
           step.connection,
+          transaction,
         );
-        const expected = step.kind === "agent" ? "model" : step.kind;
+        const expected =
+          step.kind === "agent"
+            ? "model"
+            : step.kind === "github_issue"
+              ? "http"
+              : step.kind;
         if (connector.kind !== expected)
           throw new AppError(
             400,
@@ -285,8 +295,12 @@ export class Store {
         const connector = await this.connector(
           identity.workspaceId,
           step.verify.connection,
+          transaction,
         );
-        if (connector.kind !== step.verify.kind)
+        if (
+          connector.kind !==
+          (step.verify.kind === "github_issue" ? "http" : step.verify.kind)
+        )
           throw new AppError(
             400,
             "CONNECTOR_KIND",
@@ -308,7 +322,7 @@ export class Store {
         }
       }
     }
-    return this.db.transaction(async (tx) => {
+    const publish = async (tx: Sql) => {
       await tx.query("SELECT id FROM workspaces WHERE id=$1 FOR UPDATE", [
         identity.workspaceId,
       ]);
@@ -340,7 +354,8 @@ export class Store {
         { id, name: operation.name, version, digest },
       );
       return { id, version, digest, definition: operation };
-    });
+    };
+    return transaction ? publish(transaction) : this.db.transaction(publish);
   }
   async operation(workspaceId: string, name: string, version?: number) {
     const result = await this.db.query<{
@@ -598,7 +613,7 @@ export class Store {
         );
       } else {
         const dispatched = await tx.query(
-          "SELECT id FROM step_runs WHERE run_id=$1 AND status IN('DISPATCHED','VERIFYING','UNKNOWN')",
+          "SELECT id FROM step_runs WHERE run_id=$1 AND status IN('DISPATCHED','VERIFYING','UNKNOWN') AND resolved->>'effect'='write'",
           [id],
         );
         if (dispatched.rows.length)
@@ -637,11 +652,11 @@ export class Store {
       );
       const run = result.rows[0];
       if (!run) throw new AppError(404, "NOT_FOUND", "Run not found");
-      if (run.status !== "NEEDS_ATTENTION")
+      if (!["NEEDS_ATTENTION", "WAITING_EXTERNAL"].includes(run.status))
         throw new AppError(
           409,
           "NOT_RECONCILABLE",
-          "Only runs needing attention can be reconciled",
+          "Only waiting runs or runs needing attention can be checked",
         );
       await tx.query(
         "UPDATE runs SET status='QUEUED',lease_token=NULL,lease_until=NULL,available_at=now(),updated_at=now() WHERE id=$1",

@@ -9,7 +9,7 @@ Use Node.js 22.12+ and pnpm 11.25.0. Run:
 ```sh
 git clone https://github.com/ArtAndrew/agent-operations.git
 cd agent-operations
-git checkout v0.1.0
+git checkout v0.2.0
 corepack enable
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium --only-shell
